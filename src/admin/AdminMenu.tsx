@@ -32,7 +32,7 @@ export default function AdminMenu({
             title="Expandir menú"
             aria-label="Expandir menú"
           >
-            <Icono nombre="menu" size={20} />
+            <Icono nombre="muela" size={20} />
           </button>
         )}
       </div>

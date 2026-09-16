@@ -10,6 +10,7 @@ export type NombreIcono =
   | 'config'
   | 'logout'
   | 'menu'
+  | 'muela'
 
 export function Icono({ nombre, size = 18 }: { nombre: NombreIcono; size?: number }) {
   const caminos: Record<NombreIcono, ReactElement> = {
@@ -69,6 +70,9 @@ export function Icono({ nombre, size = 18 }: { nombre: NombreIcono; size?: numbe
         <line x1="3" y1="12" x2="21" y2="12" />
         <line x1="3" y1="18" x2="21" y2="18" />
       </>
+    ),
+    muela: (
+      <path d="M5 8.2c0-3.2 2-4.7 3.8-4.7 1.2 0 2 1 3.2 1s2-1 3.2-1C17 3.5 19 5 19 8.2c0 1.6-.8 3-1.1 4.5-.6 3.1-.9 6.3-1.4 8.2-.2.9-.5 1.7-1.3 1.7-.9 0-1.1-1-1.3-2-.3-1.4-.3-3-1.9-3s-1.6 1.6-1.9 3c-.2 1-.4 2-1.3 2-.8 0-1.1-.8-1.3-1.7-.5-1.9-.8-5.1-1.4-8.2C5.8 11 5 9.8 5 8.2z" />
     ),
   }
 

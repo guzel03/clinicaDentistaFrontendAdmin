@@ -9,6 +9,7 @@ import {
   updateServicio,
   deleteServicio,
   createCliente,
+  updateCliente,
   deleteCliente,
   crearCita,
   deleteCita,
@@ -162,6 +163,13 @@ export function useAdminDatos() {
     await createCliente(datos)
   }, [])
 
+  const modificarCliente = useCallback(
+    async (id: string, datos: Partial<ClienteNuevo>) => {
+      await updateCliente(id, datos)
+    },
+    [],
+  )
+
   const eliminarCliente = useCallback(async (id: string) => {
     await deleteCliente(id)
   }, [])
@@ -228,6 +236,7 @@ export function useAdminDatos() {
     modificarServicio,
     eliminarServicio,
     registrarCliente,
+    modificarCliente,
     eliminarCliente,
     registrarCita,
     eliminarCita,

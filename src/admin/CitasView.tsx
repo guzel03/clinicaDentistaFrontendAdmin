@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import CalendarioCitas from '../components/CalendarioCitas'
-import type { CitaBackend, CitaNueva, ClienteBackend, ServicioBackend } from '../api'
+import type { CitaBackend, CitaNueva, ClienteBackend, ClienteNuevo, ServicioBackend } from '../api'
 import { citaVacio, formatearFecha } from './admin'
+import {
+  ciValido,
+  soloLetras,
+  telefonoValido,
+  soloLetrasInput,
+  soloTelefonoInput,
+  ciInput,
+} from '../validaciones'
+import { clienteVacio } from './admin'
 
 export default function CitasView({
   clientes,
@@ -13,6 +22,7 @@ export default function CitasView({
   datosCargados,
   onRegistrarCita,
   onEliminarCita,
+  onModificarCliente,
   onRevision,
   onMostrarModal,
 }: {
@@ -24,6 +34,7 @@ export default function CitasView({
   datosCargados: boolean
   onRegistrarCita: (cita: CitaNueva) => Promise<void>
   onEliminarCita: (id: string) => Promise<void>
+  onModificarCliente: (id: string, datos: Partial<ClienteNuevo>) => Promise<void>
   onRevision: () => void
   onMostrarModal: (tipo: 'exito' | 'error', titulo: string, mensaje: string) => void
 }) {
@@ -31,6 +42,10 @@ export default function CitasView({
   const [mostrarFormCita, setMostrarFormCita] = useState(false)
   const [guardandoCita, setGuardandoCita] = useState(false)
   const [citaAEliminar, setCitaAEliminar] = useState<CitaBackend | null>(null)
+  const [clienteAEditar, setClienteAEditar] = useState<ClienteBackend | null>(null)
+  const [formCliente, setFormCliente] = useState(clienteVacio)
+  const [guardandoCliente, setGuardandoCliente] = useState(false)
+  const [erroresCliente, setErroresCliente] = useState<Record<string, string>>({})
 
   function cerrarFormCita() {
     setMostrarFormCita(false)
@@ -77,7 +92,65 @@ export default function CitasView({
     }
   }
 
+  function abrirEditarCliente(cliente: ClienteBackend) {
+    setClienteAEditar(cliente)
+    setFormCliente({
+      ci: cliente.ci,
+      nombre: cliente.nombre,
+      apellidos: cliente.apellidos,
+      telefono: cliente.telefono,
+      direccion: cliente.direccion ?? '',
+    })
+    setErroresCliente({})
+  }
+
+  function cerrarEditarCliente() {
+    setClienteAEditar(null)
+    setFormCliente(clienteVacio)
+    setErroresCliente({})
+  }
+
+  async function manejarGuardarCliente(e: FormEvent) {
+    e.preventDefault()
+    if (!clienteAEditar) return
+
+    const erroresLocal: Record<string, string> = {}
+    if (!ciValido(formCliente.ci))
+      erroresLocal.ci =
+        'El CI debe tener 11 dígitos y una fecha de nacimiento válida (mes 01-12 y día válido)'
+    if (!soloLetras(formCliente.nombre)) erroresLocal.nombre = 'El nombre solo puede contener letras'
+    if (!soloLetras(formCliente.apellidos))
+      erroresLocal.apellidos = 'Los apellidos solo pueden contener letras'
+    if (!telefonoValido(formCliente.telefono))
+      erroresLocal.telefono = 'El teléfono solo puede contener números, espacios o +'
+    setErroresCliente(erroresLocal)
+    if (Object.keys(erroresLocal).length > 0) return
+
+    setGuardandoCliente(true)
+    try {
+      await onModificarCliente(clienteAEditar._id, {
+        ci: formCliente.ci.trim(),
+        nombre: formCliente.nombre.trim(),
+        apellidos: formCliente.apellidos.trim(),
+        telefono: formCliente.telefono.trim(),
+        direccion: formCliente.direccion.trim() || undefined,
+      })
+      cerrarEditarCliente()
+      onRevision()
+      onMostrarModal('exito', 'Cliente actualizado', 'Los datos del cliente se guardaron correctamente.')
+    } catch {
+      onMostrarModal(
+        'error',
+        'Error al guardar',
+        'No se pudo modificar el cliente. Verifica el backend y que el CI no esté en uso.',
+      )
+    } finally {
+      setGuardandoCliente(false)
+    }
+  }
+
   const clientePorId = new Map(clientes.map((c) => [c._id, `${c.nombre} ${c.apellidos}`]))
+  const clientePorObjeto = new Map(clientes.map((c) => [c._id, c]))
   const servicioPorId = new Map(serviciosBackend.map((s) => [s._id, s.nombreServicio]))
 
   return (
@@ -208,12 +281,23 @@ export default function CitasView({
                   </td>
                   <td>{formatearFecha(cita.fecha)}</td>
                   <td>
-                    <button
-                      className="btn btn-small btn-danger"
-                      onClick={() => setCitaAEliminar(cita)}
-                    >
-                      Eliminar
-                    </button>
+                    <div className="servicio-acciones">
+                      {clientePorObjeto.get(cita.cliente) && (
+                        <button
+                          className="btn btn-small btn-outline"
+                          onClick={() => abrirEditarCliente(clientePorObjeto.get(cita.cliente)!)}
+                          title="Editar los datos del cliente"
+                        >
+                          Editar
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-small btn-danger"
+                        onClick={() => setCitaAEliminar(cita)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -254,6 +338,117 @@ export default function CitasView({
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {clienteAEditar && (
+        <div className="modal-overlay" onClick={cerrarEditarCliente}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Editar cliente</h2>
+              <button
+                className="modal-close"
+                onClick={cerrarEditarCliente}
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={manejarGuardarCliente}>
+              <div className="campo">
+                <label htmlFor="editc-ci">Carné de identidad</label>
+                <input
+                  id="editc-ci"
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  value={formCliente.ci}
+                  onChange={(e) => setFormCliente({ ...formCliente, ci: ciInput(e.target.value) })}
+                  placeholder="Ej. 92051234785"
+                  className={erroresCliente.ci ? 'input-error' : ''}
+                />
+                {erroresCliente.ci && <p className="campo-error">{erroresCliente.ci}</p>}
+              </div>
+
+              <div className="campo-row">
+                <div className="campo">
+                  <label htmlFor="editc-nombre">Nombre</label>
+                  <input
+                    id="editc-nombre"
+                    type="text"
+                    required
+                    value={formCliente.nombre}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, nombre: soloLetrasInput(e.target.value) })
+                    }
+                    placeholder="Ej. Juan"
+                    className={erroresCliente.nombre ? 'input-error' : ''}
+                  />
+                  {erroresCliente.nombre && <p className="campo-error">{erroresCliente.nombre}</p>}
+                </div>
+                <div className="campo">
+                  <label htmlFor="editc-apellidos">Apellidos</label>
+                  <input
+                    id="editc-apellidos"
+                    type="text"
+                    required
+                    value={formCliente.apellidos}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, apellidos: soloLetrasInput(e.target.value) })
+                    }
+                    placeholder="Ej. Pérez Gómez"
+                    className={erroresCliente.apellidos ? 'input-error' : ''}
+                  />
+                  {erroresCliente.apellidos && (
+                    <p className="campo-error">{erroresCliente.apellidos}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="campo">
+                <label htmlFor="editc-telefono">Teléfono</label>
+                <input
+                  id="editc-telefono"
+                  type="text"
+                  inputMode="tel"
+                  required
+                  value={formCliente.telefono}
+                  onChange={(e) =>
+                    setFormCliente({ ...formCliente, telefono: soloTelefonoInput(e.target.value) })
+                  }
+                  placeholder="Ej. +51 999 888 777"
+                  className={erroresCliente.telefono ? 'input-error' : ''}
+                />
+                {erroresCliente.telefono && <p className="campo-error">{erroresCliente.telefono}</p>}
+              </div>
+
+              <div className="campo">
+                <label htmlFor="editc-direccion">Dirección</label>
+                <input
+                  id="editc-direccion"
+                  type="text"
+                  value={formCliente.direccion}
+                  onChange={(e) => setFormCliente({ ...formCliente, direccion: e.target.value })}
+                  placeholder="Ej. Av. Los Olivos 123"
+                />
+              </div>
+
+              <div className="form-buttons">
+                <button type="submit" className="btn btn-primary" disabled={guardandoCliente}>
+                  {guardandoCliente ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  disabled={guardandoCliente}
+                  onClick={cerrarEditarCliente}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

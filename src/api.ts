@@ -134,6 +134,15 @@ export async function crearCliente(cliente: ClienteNuevo): Promise<ClienteBacken
 }
 
 
+export async function updateCliente(
+  id: string,
+  datos: Partial<ClienteNuevo>,
+): Promise<ClienteBackend> {
+  const { data } = await api.patch<ClienteBackend>(`/cliente/${id}`, datos)
+  return data
+}
+
+
 export async function crearCita(cita: CitaNueva): Promise<CitaBackend> {
   const { data } = await api.post<CitaBackend>('/cita', cita)
   return data
