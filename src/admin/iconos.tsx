@@ -5,6 +5,7 @@ export type NombreIcono =
   | 'servicios'
   | 'clientes'
   | 'citas'
+  | 'moneda'
   | 'entrada'
   | 'stock'
   | 'config'
@@ -35,6 +36,13 @@ export function Icono({ nombre, size = 18 }: { nombre: NombreIcono; size?: numbe
         <line x1="16" y1="2" x2="16" y2="6" />
         <line x1="8" y1="2" x2="8" y2="6" />
         <line x1="3" y1="10" x2="21" y2="10" />
+      </>
+    ),
+    moneda: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="4.5" />
+        <line x1="12" y1="7.5" x2="12" y2="16.5" />
       </>
     ),
     entrada: (

@@ -15,6 +15,9 @@ import {
   deleteCita,
   crearDiaInhabilitado,
   eliminarDiaInhabilitado,
+  createMoneda,
+  updateMoneda,
+  deleteMoneda,
 } from '../api'
 import type {
   CitaBackend,
@@ -159,6 +162,18 @@ export function useAdminDatos() {
     await deleteServicio(id)
   }, [])
 
+  const agregarMoneda = useCallback(async (nombre: string) => {
+    await createMoneda({ tipoMoneda: nombre })
+  }, [])
+
+  const modificarMoneda = useCallback(async (id: string, nombre: string) => {
+    await updateMoneda(id, { tipoMoneda: nombre })
+  }, [])
+
+  const eliminarMoneda = useCallback(async (id: string) => {
+    await deleteMoneda(id)
+  }, [])
+
   const registrarCliente = useCallback(async (datos: ClienteNuevo) => {
     await createCliente(datos)
   }, [])
@@ -235,6 +250,9 @@ export function useAdminDatos() {
     agregarServicio,
     modificarServicio,
     eliminarServicio,
+    agregarMoneda,
+    modificarMoneda,
+    eliminarMoneda,
     registrarCliente,
     modificarCliente,
     eliminarCliente,

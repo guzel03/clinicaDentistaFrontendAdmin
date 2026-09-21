@@ -97,6 +97,27 @@ export async function getMonedas(): Promise<MonedaBackend[]> {
   return data
 }
 
+export interface MonedaNueva {
+  tipoMoneda: string
+}
+
+export async function createMoneda(datos: MonedaNueva): Promise<MonedaBackend> {
+  const { data } = await api.post<MonedaBackend>('/moneda', datos)
+  return data
+}
+
+export async function updateMoneda(
+  id: string,
+  datos: Partial<MonedaNueva>,
+): Promise<MonedaBackend> {
+  const { data } = await api.patch<MonedaBackend>(`/moneda/${id}`, datos)
+  return data
+}
+
+export async function deleteMoneda(id: string): Promise<void> {
+  await api.delete(`/moneda/${id}`)
+}
+
 
 export async function getClientes(): Promise<ClienteBackend[]> {
   const { data } = await api.get<ClienteBackend[]>('/cliente')

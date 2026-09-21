@@ -6,6 +6,7 @@ import ConfiguracionView from '../admin/ConfiguracionView'
 import DashboardView from '../admin/DashboardView'
 import EntradaView from '../admin/EntradaView'
 import LoginView from '../admin/LoginView'
+import Nomenclador from '../admin/Nomenclador'
 import ServiciosView from '../admin/ServiciosView'
 import StockView from '../admin/StockView'
 import { useAdminDatos } from '../admin/useAdminDatos'
@@ -36,6 +37,10 @@ export default function Administrador({ onVolverAlSitio }: { onVolverAlSitio?: (
         />
 
         <div className="admin-contenido" onClick={() => setMenuCerrado(true)}>
+          <header className="admin-topbar">
+            <span className="admin-topbar-item admin-topbar-saludo">Bienvenido Admin!</span>
+          </header>
+
           {admin.seccion === 'dashboard' && (
             <DashboardView
               servicios={admin.servicios}
@@ -88,6 +93,19 @@ export default function Administrador({ onVolverAlSitio }: { onVolverAlSitio?: (
               onRegistrarCita={admin.registrarCita}
               onEliminarCita={admin.eliminarCita}
               onModificarCliente={admin.modificarCliente}
+              onRevision={admin.revisar}
+              onMostrarModal={mostrarModal}
+            />
+          )}
+
+          {admin.seccion === 'nomenclador' && (
+            <Nomenclador
+              monedas={admin.monedas}
+              cargando={admin.cargandoDashboard}
+              datosCargados={admin.datosCargados}
+              onAgregarMoneda={admin.agregarMoneda}
+              onModificarMoneda={admin.modificarMoneda}
+              onEliminarMoneda={admin.eliminarMoneda}
               onRevision={admin.revisar}
               onMostrarModal={mostrarModal}
             />

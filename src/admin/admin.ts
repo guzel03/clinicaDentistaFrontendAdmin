@@ -17,6 +17,7 @@ export const OPCIONES_MENU = [
   { id: 'servicios', label: 'Servicios', icono: 'servicios' },
   { id: 'clientes', label: 'Clientes', icono: 'clientes' },
   { id: 'citas', label: 'Citas', icono: 'citas' },
+  { id: 'nomenclador', label: 'Nomenclador', icono: 'moneda' },
   { id: 'entrada', label: 'Productos Entrada', icono: 'entrada' },
   { id: 'stock', label: 'Stock', icono: 'stock' },
 ] as const
