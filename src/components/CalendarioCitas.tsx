@@ -17,6 +17,8 @@ interface Props {
   resaltarConCita?: ReadonlySet<string>
   bloquearInhabilitados?: boolean
   bloquearPasados?: boolean
+  citasPorDia?: ReadonlyMap<string, number>
+  maxCitasPorDia?: number
   onSeleccionarDia?: (fecha: string) => void
 }
 
@@ -26,6 +28,8 @@ export default function CalendarioCitas({
   resaltarConCita = new Set<string>(),
   bloquearInhabilitados = false,
   bloquearPasados = false,
+  citasPorDia,
+  maxCitasPorDia,
   onSeleccionarDia,
 }: Props) {
   const hoy = new Date()
@@ -97,7 +101,11 @@ export default function CalendarioCitas({
           const esHoy = fecha === fechaHoy
           const seleccionado = fecha === fechaSeleccionada
           const pasado = bloquearPasados && fecha < fechaHoy
-          const bloqueado = (bloquearInhabilitados && inhabilitado) || pasado
+          const ocupadas = citasPorDia?.get(fecha) ?? 0
+          const conCupos = maxCitasPorDia != null && citasPorDia != null
+          const restantes = conCupos ? Math.max(maxCitasPorDia - ocupadas, 0) : null
+          const lleno = conCupos && restantes === 0
+          const bloqueado = (bloquearInhabilitados && inhabilitado) || pasado || lleno
 
           const clases = ['cal-dia']
           if (esHoy) clases.push('hoy')
@@ -105,12 +113,15 @@ export default function CalendarioCitas({
           if (inhabilitado) clases.push('inhabilitado')
           if (seleccionado) clases.push('seleccionado')
           if (pasado) clases.push('pasado')
+          if (lleno) clases.push('lleno')
 
           const titulo = inhabilitado
             ? 'Día inhabilitado'
             : conCita
               ? 'Tiene citas'
-              : undefined
+              : lleno
+                ? 'Día completo'
+                : undefined
 
           if (onSeleccionarDia && !bloqueado) {
             return (
@@ -118,7 +129,10 @@ export default function CalendarioCitas({
                 type="button"
                 key={`${fecha}-btn`}
                 className={clases.join(' ')}
-                onClick={() => onSeleccionarDia(fecha)}
+                onClick={() => {
+                  if (lleno) return
+                  onSeleccionarDia(fecha)
+                }}
                 title={titulo}
               >
                 {d}

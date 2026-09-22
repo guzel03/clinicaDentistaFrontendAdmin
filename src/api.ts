@@ -23,6 +23,7 @@ export interface ClienteBackend {
   nombre: string
   apellidos: string
   telefono: string
+  edad?: number
   direccion?: string
 }
 
@@ -52,6 +53,7 @@ export interface ClienteNuevo {
   nombre: string
   apellidos: string
   telefono: string
+  edad?: number
   direccion?: string
 }
 
@@ -74,6 +76,7 @@ export interface ConfiguracionBackend {
   facebook: string
   instagram: string
   schedule: HorarioBackend[]
+  maxCitasPorDia?: number
 }
 
 

@@ -1,5 +1,5 @@
 export const formVacio = { nombre: '', descripcion: '', precio: '', moneda: '', disponible: true }
-export const clienteVacio = { ci: '', nombre: '', apellidos: '', telefono: '', direccion: '' }
+export const clienteVacio = { ci: '', nombre: '', apellidos: '', telefono: '', edad: '', direccion: '' }
 export const citaVacio = { cliente: '', servicio: '', fecha: '' }
 
 export interface ModalResultado {

@@ -19,9 +19,12 @@ export interface ContactoConfig {
   instagram: string
   whatsapp: string
   whatsappUrl: string
+  maxCitasPorDia: number
 }
 
 const STORAGE_KEY = 'clinica-sonrisa-contacto'
+
+const MAX_CITAS_POR_DIA_POR_DEFECTO = 10
 
 export const VALORES_INICIALES: ContactoConfig = {
   name: CLINIC.name,
@@ -33,6 +36,7 @@ export const VALORES_INICIALES: ContactoConfig = {
   instagram: CLINIC.instagram,
   whatsapp: CLINIC.whatsapp,
   whatsappUrl: `https://wa.me/${CLINIC.whatsapp}?text=${encodeURIComponent('Hola, quiero más información.')}`,
+  maxCitasPorDia: MAX_CITAS_POR_DIA_POR_DEFECTO,
 }
 
 function cargarContacto(): ContactoConfig {
@@ -63,6 +67,7 @@ function aConfiguracionBackend(c: ContactoConfig): ConfiguracionBackend {
     facebook: c.facebook,
     instagram: c.instagram,
     schedule: c.schedule.map((s) => ({ days: s.days, hours: s.hours })),
+    maxCitasPorDia: c.maxCitasPorDia,
   }
 }
 
@@ -80,6 +85,7 @@ function aContactoConfig(c: ConfiguracionBackend): ContactoConfig {
       Array.isArray(c.schedule) && c.schedule.length > 0
         ? c.schedule.map((s) => ({ days: s.days, hours: s.hours }))
         : VALORES_INICIALES.schedule,
+    maxCitasPorDia: c.maxCitasPorDia || VALORES_INICIALES.maxCitasPorDia,
   }
 }
 

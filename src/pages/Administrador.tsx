@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AdminMenu from '../admin/AdminMenu'
+import AdminNavbar from '../admin/AdminNavbar'
 import CitasView from '../admin/CitasView'
 import ClientesView from '../admin/ClientesView'
 import ConfiguracionView from '../admin/ConfiguracionView'
@@ -37,16 +38,16 @@ export default function Administrador({ onVolverAlSitio }: { onVolverAlSitio?: (
         />
 
         <div className="admin-contenido" onClick={() => setMenuCerrado(true)}>
-          <header className="admin-topbar">
-            <span className="admin-topbar-item admin-topbar-saludo">Bienvenido Admin!</span>
-          </header>
+          <AdminNavbar />
 
+          <div className="admin-pagina">
           {admin.seccion === 'dashboard' && (
             <DashboardView
               servicios={admin.servicios}
               serviciosBackend={admin.serviciosBackend}
               clientes={admin.clientes}
               citas={admin.citas}
+              totalMonedas={admin.monedas.length}
               fechasInhabilitadas={admin.fechasInhabilitadas}
               cargando={admin.cargandoDashboard}
               datosCargados={admin.datosCargados}
@@ -117,6 +118,7 @@ export default function Administrador({ onVolverAlSitio }: { onVolverAlSitio?: (
           {admin.seccion === 'configuracion' && (
             <ConfiguracionView onMostrarModal={mostrarModal} />
           )}
+          </div>
         </div>
       </div>
 

@@ -3,12 +3,15 @@ import type { FormEvent } from 'react'
 import CalendarioCitas from '../components/CalendarioCitas'
 import type { CitaBackend, CitaNueva, ClienteBackend, ClienteNuevo, ServicioBackend } from '../api'
 import { citaVacio, formatearFecha } from './admin'
+import { useContacto } from '../contactConfig'
 import {
   ciValido,
   soloLetras,
+  soloNumeros,
   telefonoValido,
   soloLetrasInput,
   soloTelefonoInput,
+  soloNumerosInput,
   ciInput,
 } from '../validaciones'
 import { clienteVacio } from './admin'
@@ -38,6 +41,7 @@ export default function CitasView({
   onRevision: () => void
   onMostrarModal: (tipo: 'exito' | 'error', titulo: string, mensaje: string) => void
 }) {
+  const { contacto } = useContacto()
   const [formCita, setFormCita] = useState(citaVacio)
   const [mostrarFormCita, setMostrarFormCita] = useState(false)
   const [guardandoCita, setGuardandoCita] = useState(false)
@@ -99,6 +103,7 @@ export default function CitasView({
       nombre: cliente.nombre,
       apellidos: cliente.apellidos,
       telefono: cliente.telefono,
+      edad: String(cliente.edad ?? ''),
       direccion: cliente.direccion ?? '',
     })
     setErroresCliente({})
@@ -123,6 +128,8 @@ export default function CitasView({
       erroresLocal.apellidos = 'Los apellidos solo pueden contener letras'
     if (!telefonoValido(formCliente.telefono))
       erroresLocal.telefono = 'El teléfono solo puede contener números, espacios o +'
+    if (!soloNumeros(formCliente.edad) || Number(formCliente.edad) < 1 || Number(formCliente.edad) > 120)
+      erroresLocal.edad = 'La edad debe ser un número entre 1 y 120'
     setErroresCliente(erroresLocal)
     if (Object.keys(erroresLocal).length > 0) return
 
@@ -133,6 +140,7 @@ export default function CitasView({
         nombre: formCliente.nombre.trim(),
         apellidos: formCliente.apellidos.trim(),
         telefono: formCliente.telefono.trim(),
+        edad: Number(formCliente.edad),
         direccion: formCliente.direccion.trim() || undefined,
       })
       cerrarEditarCliente()
@@ -152,6 +160,12 @@ export default function CitasView({
   const clientePorId = new Map(clientes.map((c) => [c._id, `${c.nombre} ${c.apellidos}`]))
   const clientePorObjeto = new Map(clientes.map((c) => [c._id, c]))
   const servicioPorId = new Map(serviciosBackend.map((s) => [s._id, s.nombreServicio]))
+
+  const citasPorDia = new Map<string, number>()
+  for (const cita of citas) {
+    const fecha = cita.fecha.slice(0, 10)
+    citasPorDia.set(fecha, (citasPorDia.get(fecha) ?? 0) + 1)
+  }
 
   return (
     <div className="admin-seccion">
@@ -223,10 +237,12 @@ export default function CitasView({
                   fechaSeleccionada={formCita.fecha}
                   bloquearInhabilitados
                   bloquearPasados
+                  citasPorDia={citasPorDia}
+                  maxCitasPorDia={contacto.maxCitasPorDia}
                   onSeleccionarDia={(fecha) => setFormCita({ ...formCita, fecha })}
                 />
                 <p className="campo-ayuda">
-                  Los días en rojo están inhabilitados.{' '}
+                  Los días en rojo están inhabilitados y los verdes están al máximo de cupos.{' '}
                   {formCita.fecha
                     ? `Fecha seleccionada: ${formCita.fecha}`
                     : 'Selecciona un día del calendario.'}
@@ -271,7 +287,13 @@ export default function CitasView({
             ) : (
               citas.map((cita) => (
                 <tr key={cita._id}>
-                  <td>{clientePorId.get(cita.cliente) ?? cita.cliente}</td>
+                  <td>
+                  {clientePorId.has(cita.cliente) ? (
+                    clientePorId.get(cita.cliente)
+                  ) : (
+                    <span className="servicio-eliminado">Cliente no disponible</span>
+                  )}
+                </td>
                   <td>
                     {servicioPorId.has(cita.servicio) ? (
                       servicioPorId.get(cita.servicio)
@@ -407,21 +429,41 @@ export default function CitasView({
                 </div>
               </div>
 
-              <div className="campo">
-                <label htmlFor="editc-telefono">Teléfono</label>
-                <input
-                  id="editc-telefono"
-                  type="text"
-                  inputMode="tel"
-                  required
-                  value={formCliente.telefono}
-                  onChange={(e) =>
-                    setFormCliente({ ...formCliente, telefono: soloTelefonoInput(e.target.value) })
-                  }
-                  placeholder="Ej. +51 999 888 777"
-                  className={erroresCliente.telefono ? 'input-error' : ''}
-                />
-                {erroresCliente.telefono && <p className="campo-error">{erroresCliente.telefono}</p>}
+              <div className="campo-row">
+                <div className="campo">
+                  <label htmlFor="editc-telefono">Teléfono</label>
+                  <input
+                    id="editc-telefono"
+                    type="text"
+                    inputMode="tel"
+                    required
+                    value={formCliente.telefono}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, telefono: soloTelefonoInput(e.target.value) })
+                    }
+                    placeholder="Ej. +51 999 888 777"
+                    className={erroresCliente.telefono ? 'input-error' : ''}
+                  />
+                  {erroresCliente.telefono && (
+                    <p className="campo-error">{erroresCliente.telefono}</p>
+                  )}
+                </div>
+                <div className="campo">
+                  <label htmlFor="editc-edad">Edad</label>
+                  <input
+                    id="editc-edad"
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    value={formCliente.edad}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, edad: soloNumerosInput(e.target.value) })
+                    }
+                    placeholder="Ej. 32"
+                    className={erroresCliente.edad ? 'input-error' : ''}
+                  />
+                  {erroresCliente.edad && <p className="campo-error">{erroresCliente.edad}</p>}
+                </div>
               </div>
 
               <div className="campo">

@@ -2,6 +2,28 @@ import { useState } from 'react'
 import CalendarioCitas from '../components/CalendarioCitas'
 import type { CitaBackend, ClienteBackend, ServicioBackend } from '../api'
 import type { Servicio } from '../types'
+import { Icono } from './iconos'
+
+function FlechaCorner() {
+  return (
+    <span className="resumen-flecha">
+      <svg
+        width="15"
+        height="15"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <line x1="7" y1="17" x2="17" y2="7" />
+        <polyline points="7 7 17 7 17 17" />
+      </svg>
+    </span>
+  )
+}
 
 function GraficoCitas({ datos }: { datos: { nombre: string; cantidad: number }[] }) {
   const POR_PAGINA = 5
@@ -60,6 +82,7 @@ export default function DashboardView({
   serviciosBackend,
   clientes,
   citas,
+  totalMonedas,
   fechasInhabilitadas,
   cargando,
   datosCargados,
@@ -71,6 +94,7 @@ export default function DashboardView({
   serviciosBackend: ServicioBackend[]
   clientes: ClienteBackend[]
   citas: CitaBackend[]
+  totalMonedas: number
   fechasInhabilitadas: Set<string>
   cargando: boolean
   datosCargados: boolean
@@ -98,6 +122,21 @@ export default function DashboardView({
 
   return (
     <div className="admin-seccion dashboard-seccion">
+      <div className="dashboard-header">
+        <h2 className="dashboard-bienvenida">Bienvenido Admin!</h2>
+        <div className="dashboard-fecha">
+          <Icono nombre="citas" size={18} />
+          <span className="dashboard-fecha-texto">
+            {new Date().toLocaleDateString('es-ES', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </span>
+        </div>
+      </div>
+
       {cargando && !datosCargados && <p className="empty">Cargando datos del panel...</p>}
 
       {error && !datosCargados && (
@@ -112,17 +151,25 @@ export default function DashboardView({
       {datosCargados && (
         <>
           <div className="resumen-tarjetas">
-            <div className="resumen-card">
-              <span className="resumen-label">Total de servicios</span>
+            <div className="resumen-card resumen-card-azul">
+              <FlechaCorner />
+              <span className="resumen-label">Servicios</span>
               <span className="resumen-valor">{totalServicios ?? '—'}</span>
             </div>
             <div className="resumen-card">
-              <span className="resumen-label">Total de clientes</span>
+              <FlechaCorner />
+              <span className="resumen-label">Clientes</span>
               <span className="resumen-valor">{totalClientes ?? '—'}</span>
             </div>
             <div className="resumen-card">
-              <span className="resumen-label">Total de citas</span>
+              <FlechaCorner />
+              <span className="resumen-label">Citas</span>
               <span className="resumen-valor">{totalCitas ?? 0}</span>
+            </div>
+            <div className="resumen-card">
+              <FlechaCorner />
+              <span className="resumen-label">Nomencladores</span>
+              <span className="resumen-valor">{totalMonedas ?? 0}</span>
             </div>
           </div>
 
@@ -139,11 +186,13 @@ export default function DashboardView({
                 onSeleccionarDia={(fecha) => onSeleccionarDia(fecha)}
               />
             </div>
+            <div className="dashboard-columna-der">
             <div className="panel panel-grafico">
               <h3 className="panel-titulo">Citas por servicio</h3>
               <GraficoCitas datos={datosGrafico} />
             </div>
           </div>
+        </div>
         </>
       )}
     </div>

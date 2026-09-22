@@ -4,9 +4,11 @@ import type { ClienteBackend, ClienteNuevo } from '../api'
 import {
   ciValido,
   soloLetras,
+  soloNumeros,
   telefonoValido,
   soloLetrasInput,
   soloTelefonoInput,
+  soloNumerosInput,
   ciInput,
 } from '../validaciones'
 import { clienteVacio } from './admin'
@@ -51,6 +53,8 @@ export default function ClientesView({
       erroresLocal.apellidos = 'Los apellidos solo pueden contener letras'
     if (!telefonoValido(formCliente.telefono))
       erroresLocal.telefono = 'El teléfono solo puede contener números, espacios o +'
+    if (!soloNumeros(formCliente.edad) || Number(formCliente.edad) < 1 || Number(formCliente.edad) > 120)
+      erroresLocal.edad = 'La edad debe ser un número entre 1 y 120'
     setErroresCliente(erroresLocal)
     if (Object.keys(erroresLocal).length > 0) return
 
@@ -61,6 +65,7 @@ export default function ClientesView({
         nombre: formCliente.nombre.trim(),
         apellidos: formCliente.apellidos.trim(),
         telefono: formCliente.telefono.trim(),
+        edad: Number(formCliente.edad),
         direccion: formCliente.direccion.trim() || undefined,
       })
       setFormCliente(clienteVacio)
@@ -168,21 +173,41 @@ export default function ClientesView({
                 </div>
               </div>
 
-              <div className="campo">
-                <label htmlFor="ac-telefono">Teléfono</label>
-                <input
-                  id="ac-telefono"
-                  type="text"
-                  inputMode="tel"
-                  required
-                  value={formCliente.telefono}
-                  onChange={(e) =>
-                    setFormCliente({ ...formCliente, telefono: soloTelefonoInput(e.target.value) })
-                  }
-                  placeholder="Ej. +51 999 888 777"
-                  className={erroresCliente.telefono ? 'input-error' : ''}
-                />
-                {erroresCliente.telefono && <p className="campo-error">{erroresCliente.telefono}</p>}
+              <div className="campo-row">
+                <div className="campo">
+                  <label htmlFor="ac-telefono">Teléfono</label>
+                  <input
+                    id="ac-telefono"
+                    type="text"
+                    inputMode="tel"
+                    required
+                    value={formCliente.telefono}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, telefono: soloTelefonoInput(e.target.value) })
+                    }
+                    placeholder="Ej. +51 999 888 777"
+                    className={erroresCliente.telefono ? 'input-error' : ''}
+                  />
+                  {erroresCliente.telefono && (
+                    <p className="campo-error">{erroresCliente.telefono}</p>
+                  )}
+                </div>
+                <div className="campo">
+                  <label htmlFor="ac-edad">Edad</label>
+                  <input
+                    id="ac-edad"
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    value={formCliente.edad}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, edad: soloNumerosInput(e.target.value) })
+                    }
+                    placeholder="Ej. 32"
+                    className={erroresCliente.edad ? 'input-error' : ''}
+                  />
+                  {erroresCliente.edad && <p className="campo-error">{erroresCliente.edad}</p>}
+                </div>
               </div>
 
               <div className="campo">
@@ -220,6 +245,7 @@ export default function ClientesView({
             <tr>
               <th>CI</th>
               <th>Cliente</th>
+              <th>Edad</th>
               <th>Teléfono</th>
               <th>Dirección</th>
               <th>Acciones</th>
@@ -228,7 +254,7 @@ export default function ClientesView({
           <tbody>
             {clientes.length === 0 ? (
               <tr>
-                <td className="table-empty" colSpan={5}>
+                <td className="table-empty" colSpan={6}>
                   {cargando && !datosCargados ? 'Cargando clientes...' : 'No hay clientes registrados.'}
                 </td>
               </tr>
@@ -239,6 +265,7 @@ export default function ClientesView({
                   <td>
                     {c.nombre} {c.apellidos}
                   </td>
+                  <td>{c.edad ?? '—'}</td>
                   <td>{c.telefono}</td>
                   <td>{c.direccion || '—'}</td>
                   <td>

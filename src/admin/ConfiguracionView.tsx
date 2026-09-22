@@ -22,6 +22,13 @@ export default function ConfiguracionView({
     setFormContacto((prev) => ({ ...prev, [campo]: valor }))
   }
 
+  function cambiarMaxCitas(valor: string) {
+    let numero = Math.floor(Number(valor))
+    if (isNaN(numero) || numero < 1) numero = 1
+    setEditandoConfig(true)
+    setFormContacto((prev) => ({ ...prev, maxCitasPorDia: numero }))
+  }
+
   function cambiarHorario(index: number, campo: keyof HorarioItem, valor: string) {
     setEditandoConfig(true)
     setFormContacto((prev) => ({
@@ -160,6 +167,19 @@ export default function ConfiguracionView({
               placeholder="https://instagram.com/..."
             />
           </div>
+        </div>
+
+        <div className="campo">
+          <label htmlFor="c-max-citas">Cupos de citas por día</label>
+          <input
+            id="c-max-citas"
+            type="number"
+            min={1}
+            value={formContacto.maxCitasPorDia}
+            onChange={(e) => cambiarMaxCitas(e.target.value)}
+            placeholder="Ej. 10"
+          />
+          <p className="campo-ayuda">Cantidad máxima de citas que se pueden reservar en un día en la web.</p>
         </div>
 
         <div className="campo">
