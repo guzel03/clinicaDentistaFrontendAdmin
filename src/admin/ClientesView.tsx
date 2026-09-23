@@ -19,6 +19,7 @@ export default function ClientesView({
   datosCargados,
   onRegistrarCliente,
   onEliminarCliente,
+  onModificarCliente,
   onRevision,
   onMostrarModal,
 }: {
@@ -27,6 +28,7 @@ export default function ClientesView({
   datosCargados: boolean
   onRegistrarCliente: (datos: ClienteNuevo) => Promise<void>
   onEliminarCliente: (id: string) => Promise<void>
+  onModificarCliente: (id: string, datos: Partial<ClienteNuevo>) => Promise<void>
   onRevision: () => void
   onMostrarModal: (tipo: 'exito' | 'error', titulo: string, mensaje: string) => void
 }) {
@@ -35,6 +37,13 @@ export default function ClientesView({
   const [guardandoCliente, setGuardandoCliente] = useState(false)
   const [erroresCliente, setErroresCliente] = useState<Record<string, string>>({})
   const [clienteAEliminar, setClienteAEliminar] = useState<ClienteBackend | null>(null)
+  const [clienteAEditar, setClienteAEditar] = useState<ClienteBackend | null>(null)
+  const POR_PAGINA = 8
+  const [pagina, setPagina] = useState(0)
+  const totalPaginas = Math.max(1, Math.ceil(clientes.length / POR_PAGINA))
+  const paginaSegura = Math.min(pagina, totalPaginas - 1)
+  const inicio = paginaSegura * POR_PAGINA
+  const clientesVisibles = clientes.slice(inicio, inicio + POR_PAGINA)
 
   function cerrarFormCliente() {
     setMostrarFormCliente(false)
@@ -71,12 +80,30 @@ export default function ClientesView({
       setFormCliente(clienteVacio)
       setMostrarFormCliente(false)
       onRevision()
-    } catch {
-      onMostrarModal(
-        'error',
-        'Error al guardar',
-        'No se pudo registrar el cliente. Verifica que el backend esté disponible.',
-      )
+    } catch (error) {
+      const mensajeBackend =
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'data' in error.response &&
+        error.response.data &&
+        typeof error.response.data === 'object' &&
+        'message' in error.response.data &&
+        typeof error.response.data.message === 'string'
+          ? error.response.data.message
+          : undefined
+
+      if (mensajeBackend) {
+        onMostrarModal('error', 'Error al guardar', mensajeBackend)
+      } else {
+        onMostrarModal(
+          'error',
+          'Error al guardar',
+          'No se pudo registrar el cliente. Verifica que el backend esté disponible.',
+        )
+      }
     } finally {
       setGuardandoCliente(false)
     }
@@ -94,6 +121,67 @@ export default function ClientesView({
         'Error al eliminar',
         'No se pudo eliminar el cliente. Verifica que el backend esté disponible.',
       )
+    }
+  }
+
+  function abrirEditarCliente(cliente: ClienteBackend) {
+    setClienteAEditar(cliente)
+    setFormCliente({
+      ci: cliente.ci,
+      nombre: cliente.nombre,
+      apellidos: cliente.apellidos,
+      telefono: cliente.telefono,
+      edad: String(cliente.edad ?? ''),
+      direccion: cliente.direccion ?? '',
+    })
+    setErroresCliente({})
+  }
+
+  function cerrarEditarCliente() {
+    setClienteAEditar(null)
+    setFormCliente(clienteVacio)
+    setErroresCliente({})
+  }
+
+  async function manejarGuardarCliente(e: FormEvent) {
+    e.preventDefault()
+    if (!clienteAEditar) return
+
+    const erroresLocal: Record<string, string> = {}
+    if (!ciValido(formCliente.ci))
+      erroresLocal.ci =
+        'El CI debe tener 11 dígitos y una fecha de nacimiento válida (mes 01-12 y día válido)'
+    if (!soloLetras(formCliente.nombre)) erroresLocal.nombre = 'El nombre solo puede contener letras'
+    if (!soloLetras(formCliente.apellidos))
+      erroresLocal.apellidos = 'Los apellidos solo pueden contener letras'
+    if (!telefonoValido(formCliente.telefono))
+      erroresLocal.telefono = 'El teléfono solo puede contener números, espacios o +'
+    if (!soloNumeros(formCliente.edad) || Number(formCliente.edad) < 1 || Number(formCliente.edad) > 120)
+      erroresLocal.edad = 'La edad debe ser un número entre 1 y 120'
+    setErroresCliente(erroresLocal)
+    if (Object.keys(erroresLocal).length > 0) return
+
+    setGuardandoCliente(true)
+    try {
+      await onModificarCliente(clienteAEditar._id, {
+        ci: formCliente.ci.trim(),
+        nombre: formCliente.nombre.trim(),
+        apellidos: formCliente.apellidos.trim(),
+        telefono: formCliente.telefono.trim(),
+        edad: Number(formCliente.edad),
+        direccion: formCliente.direccion.trim() || undefined,
+      })
+      cerrarEditarCliente()
+      onRevision()
+      onMostrarModal('exito', 'Cliente actualizado', 'Los datos del cliente se guardaron correctamente.')
+    } catch {
+      onMostrarModal(
+        'error',
+        'Error al guardar',
+        'No se pudo modificar el cliente. Verifica el backend y que el CI no esté en uso.',
+      )
+    } finally {
+      setGuardandoCliente(false)
     }
   }
 
@@ -259,7 +347,7 @@ export default function ClientesView({
                 </td>
               </tr>
             ) : (
-              clientes.map((c) => (
+              clientesVisibles.map((c) => (
                 <tr key={c._id}>
                   <td>{c.ci}</td>
                   <td>
@@ -269,12 +357,21 @@ export default function ClientesView({
                   <td>{c.telefono}</td>
                   <td>{c.direccion || '—'}</td>
                   <td>
-                    <button
-                      className="btn btn-small btn-danger"
-                      onClick={() => setClienteAEliminar(c)}
-                    >
-                      Eliminar
-                    </button>
+                    <div className="servicio-acciones">
+                      <button
+                        className="btn btn-small btn-outline"
+                        onClick={() => abrirEditarCliente(c)}
+                        title="Editar los datos del cliente"
+                      >
+                        Editar
+                      </button>
+                      <button
+                        className="btn btn-small btn-danger"
+                        onClick={() => setClienteAEliminar(c)}
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -282,6 +379,161 @@ export default function ClientesView({
           </tbody>
         </table>
       </div>
+
+      {clientes.length > POR_PAGINA && (
+        <div className="grafico-paginacion">
+          <button
+            type="button"
+            className="btn btn-small btn-outline"
+            disabled={paginaSegura === 0}
+            onClick={() => setPagina((p) => Math.max(0, p - 1))}
+            aria-label="Anterior"
+          >
+            ←
+          </button>
+          <span className="grafico-pagina-info">
+            {inicio + 1}–{Math.min(inicio + POR_PAGINA, clientes.length)} de {clientes.length}
+          </span>
+          <button
+            type="button"
+            className="btn btn-small btn-outline"
+            disabled={paginaSegura >= totalPaginas - 1}
+            onClick={() => setPagina((p) => p + 1)}
+            aria-label="Siguiente"
+          >
+            →
+          </button>
+        </div>
+      )}
+
+      {clienteAEditar && (
+        <div className="modal-overlay" onClick={cerrarEditarCliente}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Editar cliente</h2>
+              <button className="modal-close" onClick={cerrarEditarCliente} aria-label="Cerrar">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={manejarGuardarCliente}>
+              <div className="campo">
+                <label htmlFor="ec-ci">Carné de identidad</label>
+                <input
+                  id="ec-ci"
+                  type="text"
+                  inputMode="numeric"
+                  required
+                  value={formCliente.ci}
+                  onChange={(e) => setFormCliente({ ...formCliente, ci: ciInput(e.target.value) })}
+                  placeholder="Ej. 92051234785"
+                  className={erroresCliente.ci ? 'input-error' : ''}
+                />
+                {erroresCliente.ci && <p className="campo-error">{erroresCliente.ci}</p>}
+              </div>
+
+              <div className="campo-row">
+                <div className="campo">
+                  <label htmlFor="ec-nombre">Nombre</label>
+                  <input
+                    id="ec-nombre"
+                    type="text"
+                    required
+                    value={formCliente.nombre}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, nombre: soloLetrasInput(e.target.value) })
+                    }
+                    placeholder="Ej. Juan"
+                    className={erroresCliente.nombre ? 'input-error' : ''}
+                  />
+                  {erroresCliente.nombre && <p className="campo-error">{erroresCliente.nombre}</p>}
+                </div>
+                <div className="campo">
+                  <label htmlFor="ec-apellidos">Apellidos</label>
+                  <input
+                    id="ec-apellidos"
+                    type="text"
+                    required
+                    value={formCliente.apellidos}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, apellidos: soloLetrasInput(e.target.value) })
+                    }
+                    placeholder="Ej. Pérez Gómez"
+                    className={erroresCliente.apellidos ? 'input-error' : ''}
+                  />
+                  {erroresCliente.apellidos && (
+                    <p className="campo-error">{erroresCliente.apellidos}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="campo-row">
+                <div className="campo">
+                  <label htmlFor="ec-telefono">Teléfono</label>
+                  <input
+                    id="ec-telefono"
+                    type="text"
+                    inputMode="tel"
+                    required
+                    value={formCliente.telefono}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, telefono: soloTelefonoInput(e.target.value) })
+                    }
+                    placeholder="Ej. +51 999 888 777"
+                    className={erroresCliente.telefono ? 'input-error' : ''}
+                  />
+                  {erroresCliente.telefono && (
+                    <p className="campo-error">{erroresCliente.telefono}</p>
+                  )}
+                </div>
+                <div className="campo">
+                  <label htmlFor="ec-edad">Edad</label>
+                  <input
+                    id="ec-edad"
+                    type="text"
+                    inputMode="numeric"
+                    required
+                    value={formCliente.edad}
+                    onChange={(e) =>
+                      setFormCliente({ ...formCliente, edad: soloNumerosInput(e.target.value) })
+                    }
+                    placeholder="Ej. 32"
+                    className={erroresCliente.edad ? 'input-error' : ''}
+                  />
+                  {erroresCliente.edad && <p className="campo-error">{erroresCliente.edad}</p>}
+                </div>
+              </div>
+
+              <div className="campo">
+                <label htmlFor="ec-direccion">Dirección</label>
+                <input
+                  id="ec-direccion"
+                  type="text"
+                  value={formCliente.direccion}
+                  onChange={(e) =>
+                    setFormCliente({ ...formCliente, direccion: e.target.value })
+                  }
+                  placeholder="Ej. Av. Los Olivos 123"
+                />
+              </div>
+
+              <div className="form-buttons">
+                <button type="submit" className="btn btn-primary" disabled={guardandoCliente}>
+                  {guardandoCliente ? 'Guardando...' : 'Guardar cambios'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  disabled={guardandoCliente}
+                  onClick={cerrarEditarCliente}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {clienteAEliminar && (
         <div className="modal-overlay" onClick={() => setClienteAEliminar(null)}>

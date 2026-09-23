@@ -51,6 +51,13 @@ export default function CitasView({
   const [guardandoCliente, setGuardandoCliente] = useState(false)
   const [erroresCliente, setErroresCliente] = useState<Record<string, string>>({})
 
+  const POR_PAGINA = 8
+  const [pagina, setPagina] = useState(0)
+  const totalPaginas = Math.max(1, Math.ceil(citas.length / POR_PAGINA))
+  const paginaSegura = Math.min(pagina, totalPaginas - 1)
+  const inicio = paginaSegura * POR_PAGINA
+  const citasVisibles = citas.slice(inicio, inicio + POR_PAGINA)
+
   function cerrarFormCita() {
     setMostrarFormCita(false)
     setFormCita(citaVacio)
@@ -285,7 +292,7 @@ export default function CitasView({
                 </td>
               </tr>
             ) : (
-              citas.map((cita) => (
+              citasVisibles.map((cita) => (
                 <tr key={cita._id}>
                   <td>
                   {clientePorId.has(cita.cliente) ? (
@@ -327,6 +334,32 @@ export default function CitasView({
           </tbody>
         </table>
       </div>
+
+      {citas.length > POR_PAGINA && (
+        <div className="grafico-paginacion">
+          <button
+            type="button"
+            className="btn btn-small btn-outline"
+            disabled={paginaSegura === 0}
+            onClick={() => setPagina((p) => Math.max(0, p - 1))}
+            aria-label="Anterior"
+          >
+            ←
+          </button>
+          <span className="grafico-pagina-info">
+            {inicio + 1}–{Math.min(inicio + POR_PAGINA, citas.length)} de {citas.length}
+          </span>
+          <button
+            type="button"
+            className="btn btn-small btn-outline"
+            disabled={paginaSegura >= totalPaginas - 1}
+            onClick={() => setPagina((p) => p + 1)}
+            aria-label="Siguiente"
+          >
+            →
+          </button>
+        </div>
+      )}
 
       {citaAEliminar && (
         <div className="modal-overlay" onClick={() => setCitaAEliminar(null)}>

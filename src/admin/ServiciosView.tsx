@@ -30,6 +30,12 @@ export default function ServiciosView({
   const [editando, setEditando] = useState<Servicio | null>(null)
   const [servicioAEliminar, setServicioAEliminar] = useState<Servicio | null>(null)
   const [formEdit, setFormEdit] = useState(formVacio)
+  const POR_PAGINA = 8
+  const [pagina, setPagina] = useState(0)
+  const totalPaginas = Math.max(1, Math.ceil(servicios.length / POR_PAGINA))
+  const paginaSegura = Math.min(pagina, totalPaginas - 1)
+  const inicio = paginaSegura * POR_PAGINA
+  const serviciosVisibles = servicios.slice(inicio, inicio + POR_PAGINA)
 
   function cerrarFormulario() {
     setMostrarFormulario(false)
@@ -237,7 +243,7 @@ export default function ServiciosView({
           </p>
         ) : (
           <ul>
-            {servicios.map((s) => (
+            {serviciosVisibles.map((s) => (
               <li key={s.id} className="servicio-item">
                 <div className="servicio-info">
                   <strong>{s.nombre}</strong>
@@ -265,6 +271,32 @@ export default function ServiciosView({
               </li>
             ))}
           </ul>
+        )}
+
+        {servicios.length > POR_PAGINA && (
+          <div className="grafico-paginacion">
+            <button
+              type="button"
+              className="btn btn-small btn-outline"
+              disabled={paginaSegura === 0}
+              onClick={() => setPagina((p) => Math.max(0, p - 1))}
+              aria-label="Anterior"
+            >
+              ←
+            </button>
+            <span className="grafico-pagina-info">
+              {inicio + 1}–{Math.min(inicio + POR_PAGINA, servicios.length)} de {servicios.length}
+            </span>
+            <button
+              type="button"
+              className="btn btn-small btn-outline"
+              disabled={paginaSegura >= totalPaginas - 1}
+              onClick={() => setPagina((p) => p + 1)}
+              aria-label="Siguiente"
+            >
+              →
+            </button>
+          </div>
         )}
       </div>
 

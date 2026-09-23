@@ -78,6 +78,7 @@ export default function Administrador({ onVolverAlSitio }: { onVolverAlSitio?: (
               datosCargados={admin.datosCargados}
               onRegistrarCliente={admin.registrarCliente}
               onEliminarCliente={admin.eliminarCliente}
+              onModificarCliente={admin.modificarCliente}
               onRevision={admin.revisar}
               onMostrarModal={mostrarModal}
             />
