@@ -78,9 +78,9 @@ export default function AdminMenu({
           </button>
         )}
         <div className="admin-user">
-          <span className="admin-avatar">HM</span>
+          <span className="admin-avatar">L</span>
           <span className="admin-user-info">
-            <span className="admin-user-name">hesanmoin</span>
+            <span className="admin-user-name">Login</span>
             <span className="admin-user-cargo">Administrador</span>
           </span>
           <button
